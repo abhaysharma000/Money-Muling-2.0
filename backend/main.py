@@ -127,7 +127,7 @@ async def generate_demo_endpoint():
         from backend.generate_data import generate_test_csv
     
     output_buffer = io.StringIO()
-    generate_test_csv(num_transactions=2000, output_file=output_buffer)
+    generate_test_csv(num_transactions=5000, output_file=output_buffer)
     output_buffer.seek(0)
     
     reader = csv.DictReader(output_buffer)

@@ -40,3 +40,34 @@ The application is decoupled into a clear Client-Server architecture:
 
 ## 📊 Evaluation
 The platform demonstrates highly optimized Pandas handling (vectorized ops), clean separation of concerns, and defensive programming. The user interface leverages modern CSS to deliver a professional and responsive command-center experience.
+
+
+## 🧪 Live Demo Analysis Results
+
+Analyzed **4933** transactions across **1025** unique accounts.
+
+- **Suspicious Accounts Flagged**: 931
+- **Fraud Rings Detected**: 69
+- **Average Risk Score (of flagged)**: 27.87
+
+### Top 5 High-Risk Accounts Identified
+1. **`ACC_0060`** (Score: 70.0)
+   - Patterns: `fan_in, fan_out`
+   - Narrative: _Fan-in: 11 distinct sources. Fan-out: 11 distinct targets._
+1. **`ACC_0866`** (Score: 68.17)
+   - Patterns: `fan_out`
+   - Narrative: _Fan-out: 15 distinct targets._
+1. **`ACC_0037`** (Score: 68.17)
+   - Patterns: `fan_out`
+   - Narrative: _Fan-out: 12 distinct targets._
+1. **`ACC_0851`** (Score: 65.57)
+   - Patterns: `fan_out`
+   - Narrative: _Fan-out: 10 distinct targets._
+1. **`ACC_0887`** (Score: 65.57)
+   - Patterns: `fan_in`
+   - Narrative: _Fan-in: 12 distinct sources._
+
+### Deep Analysis of Top Fraud Rings
+- **`RING_SMURF_SINK_MEG`**: `Layered Distribution` pattern with a risk score of 55.13. Contains 1 nested accounts.
+- **`RING_CYCLE_001`**: `Circular Routing` pattern with a risk score of 53.91. Contains 2 nested accounts.
+- **`RING_SMURF_ACC_0460`**: `Layered Distribution` pattern with a risk score of 39.62. Contains 6 nested accounts.
