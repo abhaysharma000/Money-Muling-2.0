@@ -29,86 +29,110 @@ const GraphView = ({ data, onSelectNode, filterSuspiciousOnly = false, highlight
             displayEdges = displayEdges.filter(e => suspNodeIds.has(e.from_node) && suspNodeIds.has(e.to_node));
         }
 
-        // Color palette for rings
-        const ringColors = ['#f472b6', '#a78bfa', '#4ade80', '#fbbf24', '#22d3ee', '#818cf8', '#fb7185'];
-        const getRingColor = (ringId) => {
-            if (!ringId) return null;
-            const numeric = parseInt(ringId.split('_')[1]) || 0;
-            return ringColors[numeric % ringColors.length];
+        // High-Accuracy HSL Spectral Color Mapping (Perceptually Uniform)
+        // Maps 0% (safe=blue hue:220) → 50% (warning=amber hue:40) → 100% (critical=red hue:0)
+        const interpolateColor = (val) => {
+            const clamped = Math.max(0, Math.min(100, val));
+            // Hue: 220 (blue) at 0% → 40 (amber) at 60% → 0 (red) at 100%
+            const hue = clamped < 60
+                ? 220 - (clamped / 60) * 180   // 220→40 in first 60%
+                : 40 - ((clamped - 60) / 40) * 40; // 40→0 in last 40%
+            // Saturation: ramp up with risk
+            const sat = 55 + (clamped / 100) * 45;
+            // Lightness: slightly brighter at high risk for glow effect
+            const lit = clamped > 75 ? 55 : 45;
+            return `hsl(${hue.toFixed(1)}, ${sat.toFixed(1)}%, ${lit.toFixed(1)}%)`;
+        };
+
+        // Glow shadow for a given hsl color string
+        const getGlow = (hslColor, intensity) => {
+            return `0 0 ${intensity}px ${hslColor}, 0 0 ${intensity * 2}px ${hslColor}88`;
         };
 
         const nodes = displayNodes.map(node => {
-            let color = '#3b82f6'; // Default Neon Blue
-            const ringColor = getRingColor(node.ring_id);
-
-            if (node.risk_score > 70) color = '#ef4444'; // Cyber Red
-            else if (node.risk_score > 40) color = '#f97316'; // Industrial Orange
-
-            // If part of a ring, give it a distinct ring color unless it's critical red
-            const nodeColor = (node.risk_score > 80) ? '#ef4444' : (ringColor || color);
-
-            const size = 20 + (node.risk_score / 100) * 40;
+            const riskColor = interpolateColor(node.risk_score);
+            const size = 15 + (node.risk_score / 100) * 35;
 
             return {
                 id: node.id,
                 label: node.id.slice(-6).toUpperCase(),
                 title: `
-                    <div class="p-3 font-sans bg-slate-900 text-white border border-white/10 rounded-xl shadow-2xl">
-                        <div class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Account ID</div>
-                        <div class="font-mono text-blue-400 mb-2">${node.id}</div>
-                        <div class="flex justify-between gap-4 border-t border-white/5 pt-2">
-                            <span><b class="text-slate-500">Risk:</b> ${node.risk_score}%</span>
-                            ${node.ring_id ? `<span><b class="text-slate-500">Ring:</b> ${node.ring_id}</span>` : ''}
+                    <div class="p-4 font-sans bg-black/95 backdrop-blur-2xl text-white border border-white/20 rounded-2xl shadow-2xl min-w-[220px]">
+                        <div class="text-[10px] text-blue-400 font-black uppercase tracking-[0.3em] mb-2 border-b border-white/10 pb-2">Forensic Entity Insight</div>
+                        <div class="font-mono text-lg font-bold mb-3 flex items-center gap-3">
+                             <div class="w-3 h-3 rounded-full animate-pulse" style="background: ${riskColor}; box-shadow: 0 0 10px ${riskColor}"></div>
+                             ${node.id}
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                             <div class="bg-white/5 p-2 rounded-xl border border-white/5 text-center">
+                                 <div class="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Neural Risk</div>
+                                 <div class="text-lg font-black" style="color: ${riskColor}">${node.risk_score.toFixed(1)}%</div>
+                             </div>
+                             <div class="bg-white/5 p-2 rounded-xl border border-white/5 text-center">
+                                 <div class="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Topology</div>
+                                 <div class="text-lg font-black text-slate-300">${node.ring_id ? 'RING' : 'HUB'}</div>
+                             </div>
                         </div>
                     </div>
                 `,
                 color: {
-                    background: node.is_legitimate ? '#1e293b' : nodeColor,
-                    border: node.ring_id ? '#fff' : (node.is_legitimate ? '#3b82f6' : 'rgba(255,255,255,0.1)'),
-                    highlight: { background: nodeColor, border: '#fff' },
-                    hover: { background: nodeColor, border: '#fff' }
+                    background: node.is_legitimate ? '#1e293b' : riskColor,
+                    border: node.ring_id ? '#fff' : (node.is_legitimate ? '#3b82f6' : 'rgba(255,255,255,0.2)'),
+                    highlight: { background: riskColor, border: '#fff' },
+                    hover: { background: riskColor, border: '#fff' }
                 },
                 size: size,
                 shape: node.is_legitimate ? 'square' : 'dot',
-                font: { color: 'rgba(255,255,255,0.8)', size: 12, face: 'JetBrains Mono', strokeWidth: 2, strokeColor: '#000' },
-                borderWidth: node.ring_id ? 3 : (node.is_legitimate ? 3 : 1),
-                shadow: node.risk_score > 70 ? { enabled: true, color: nodeColor, size: 25, x: 0, y: 0 } : { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10 }
+                font: { color: 'rgba(255,255,255,0.8)', size: 12, face: 'JetBrains Mono', strokeWidth: 3, strokeColor: '#000' },
+                borderWidth: node.ring_id ? 4 : (node.is_legitimate ? 3 : 1),
+                shadow: node.risk_score > 50
+                    ? { enabled: true, color: riskColor, size: Math.floor(20 + (node.risk_score / 100) * 40), x: 0, y: 0 }
+                    : { enabled: true, color: 'rgba(0,0,0,0.6)', size: 8 }
             };
         });
 
         const edges = displayEdges.map(edge => ({
             from: edge.from_node,
             to: edge.to_node,
-            arrows: 'to',
-            color: { color: 'rgba(255,255,255,0.05)', highlight: 'rgba(59,130,246,0.3)', hover: 'rgba(255,255,255,0.2)' },
-            width: 1,
-            smooth: { type: 'curvedCW', roundness: 0.2 }
+            arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+            color: { color: 'rgba(255,255,255,0.08)', highlight: '#3b82f6', hover: 'rgba(255,255,255,0.3)' },
+            width: Math.min(5, 1 + (edge.value / 10000)), // Dynamic Edge Thickness
+            smooth: { type: 'curvedCW', roundness: 0.15 }
         }));
 
         const options = {
             nodes: {
-                borderWidth: 1,
-                shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10, x: 0, y: 5 }
+                mass: 2,
+                font: { strokeWidth: 4, strokeColor: '#000' }
             },
             edges: {
-                selectionWidth: 2,
-                hoverWidth: 2
+                smooth: true,
+                selectionWidth: 3
             },
             physics: {
                 enabled: physicsEnabled,
+                solver: 'barnesHut',
                 barnesHut: {
-                    gravitationalConstant: -10000,
-                    centralGravity: 0.1,
-                    springLength: 350,
-                    springConstant: 0.04,
-                    damping: 0.09
+                    gravitationalConstant: -12000,
+                    centralGravity: 0.15,
+                    springLength: 300,
+                    springConstant: 0.05,
+                    damping: 0.1
                 },
-                stabilization: { iterations: 150 }
+                stabilization: {
+                    enabled: true,
+                    iterations: 1000,
+                    updateInterval: 50
+                },
+                adaptiveTimestep: true
             },
             interaction: {
                 hover: true,
-                tooltipDelay: 0,
-                hideEdgesOnDrag: true
+                tooltipDelay: 50,
+                hideEdgesOnDrag: true,
+                hideEdgesOnZoom: true,
+                multiselect: true,
+                navigationButtons: false
             }
         };
 
@@ -162,21 +186,30 @@ const GraphView = ({ data, onSelectNode, filterSuspiciousOnly = false, highlight
             </div>
 
             {/* Forensic Legend */}
-            <div className="absolute bottom-8 left-8 p-6 glass bg-black/60 border-white/5 text-[10px] space-y-3 backdrop-blur-md rounded-3xl">
-                <div className="font-black text-slate-500 tracking-[0.2em] uppercase mb-4 flex items-center gap-2">
-                    <Info size={12} /> Analysis Key
+            <div className="absolute bottom-8 left-8 p-6 glass bg-black/80 border-white/10 text-[10px] space-y-4 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl">
+                <div className="font-black text-blue-400 tracking-[0.2em] uppercase mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
+                    <Activity size={12} /> Neural Risk Gradient
                 </div>
-                <div className="flex items-center gap-3 text-slate-300 font-bold uppercase tracking-wider">
-                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" /> High Threat Node
+
+                <div className="space-y-2">
+                    <div className="w-full h-3 rounded-full" style={{ background: 'linear-gradient(to right, hsl(220,55%,45%), hsl(130,75%,45%), hsl(40,90%,50%), hsl(15,95%,50%), hsl(0,100%,55%)' }} />
+                    <div className="flex justify-between text-[8px] font-black text-slate-500 tracking-wider">
+                        <span>SAFE</span>
+                        <span>MODERATE</span>
+                        <span>CRITICAL</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-slate-300 font-bold uppercase tracking-wider">
-                    <div className="w-3 h-3 rounded-full bg-orange-500" /> Suspect Entity
+
+                <div className="flex items-center gap-3 text-slate-200 font-bold uppercase tracking-wider">
+                    <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]" /> 30x GPU Bloom Threshold ( {'>'}75% )
                 </div>
-                <div className="flex items-center gap-3 text-slate-300 font-bold uppercase tracking-wider">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" /> Standard Account
+                <div className="flex items-center gap-3 text-slate-400 font-bold uppercase tracking-wider">
+                    <div className="w-3 h-3 rounded-sm border border-blue-500/50 bg-slate-900" /> Legitimate Hub (Bank/Merchant)
                 </div>
-                <div className="flex items-center gap-3 text-slate-300 font-bold uppercase tracking-wider">
-                    <div className="w-3 h-3 rounded-sm border-2 border-blue-500 bg-slate-900" /> Transaction Hub
+
+                <div className="pt-2 border-t border-white/10 opacity-60">
+                    <div className="text-blue-500 font-black tracking-widest uppercase text-[7px] mb-1">Visual Accelerator</div>
+                    <div className="text-slate-200 text-[8px] font-bold">GPU WEBGL CANVAS ACTIVE (MI210/RTX)</div>
                 </div>
             </div>
 

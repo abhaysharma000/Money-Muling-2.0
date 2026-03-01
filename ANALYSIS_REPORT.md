@@ -10,32 +10,33 @@ The application is decoupled into a clear Client-Server architecture:
 - **Framework**: Python FastAPI
 - **Core Technologies**: `NetworkX` (Graph Theory), `Pandas` (Data Processing)
 - **Key Modules**:
-  - `main.py`: Exposes REST endpoints (`/upload`, `/ai-analyze/{account_id}`, `/generate-demo`) and a WebSocket endpoint (`/ws/live-feed`) for real-time transaction streaming.
+  - `main.py`: Exposes REST endpoints (`/upload`, `/ai-analyze/{account_id}`, `/generate-demo`) using `StreamingResponse` for realtime feedback.
   - `engine.py`: Contains the `ForensicsEngine` class which constructs directed graphs and uses vectorized operations to flag accounts.
-  - `generate_data.py` (assumed based on imports): Synthesizes mock transaction datasets.
 - **Algorithms Implemented**:
-  - **Smurfing (Structuring)**: Dynamic sliding 72-hour window detecting $>10$ partners within bursts.
-  - **Circular Fund Routing (Carousel)**: Utilizes Johnson's Algorithm (`nx.simple_cycles`) to detect loops of 3-5 hops.
-  - **Layered Shell Networks**: Linear chain traversals detecting nested intermediaries with strictly 2-3 total transactions.
-  - **Temporal Anomalies**: Flags nodes with high velocity or $>40\%$ nocturnal (11 PM - 5 AM) transaction activity.
+  - **Smurfing (Structuring)**: Dynamic sliding 72-hour window detecting $>10$ partners within bursts. (+40 points)
+  - **Nocturnal Activity**: Flags accounts with $>40\%$ activity between 11 PM and 5 AM. (+25 points)
+  - **Circular Fund Routing (Carousel)**: Utilizes Johnson's Algorithm (`nx.simple_cycles`) to detect loops of 3-5 hops. (+25 points)
+  - **Layered Shell Networks**: Linear chain traversals detecting nested intermediaries with strictly 2-3 total transactions. (+20 points)
+  - **High Velocity/Bursts**: Detected via resampled temporal windows. (+15 points)
   - **Whitelist Logic**: Recognizes high-volume legitimate merchants and consistent payroll pairs.
 
 ### Frontend (Visual Intelligence Layer)
 - **Framework**: React (Vite)
-- **Styling**: Tailwind CSS, employing a premium dark-themed "Forensic Command Center" aesthetic with glassmorphism, pulse animations, and gradient text.
+- **Styling**: Tailwind CSS, employing a premium dark-themed "Forensic Command Center" aesthetic.
 - **Key Libraries**:
   - `vis-network`: For interactive, force-directed graph rendering.
   - `lucide-react`: Professional iconography.
 - **Key Components**:
-  - `App.jsx`: Main telemetry dashboard, state management (loading states, websocket stream processing), and AI AI Forensic Report UI wrapper. Features a unified command center for file uploads, live streams, and demo data generation.
-  - Sub-components (`GraphView`, `StatsDashboard`, `TrendChart`): Manage layout, network clusters, and transaction velocity visualizations.
+  - `App.jsx`: Main telemetry dashboard, state management, and AI Forensic Report UI. Features a unified command center for file uploads and demo data generation.
+  - `GraphView`: Interactive behavioral topology visualization with realtime forensic replay (Simulation mode).
+  - `StatsDashboard`: Tabular view of flagged accounts and network clusters (rings).
 
 ## 🚀 Key Features
 
-1. **Intelligent Ingestion**: `map_columns` automatically standardizes raw CSV data against a range of common bank statement aliases.
-2. **AI Forensic Deep Dive**: A specialized interface providing pseudo-AI narrative summaries of node behavior, classification (e.g., Aggregator vs Isolated Node), and numerical risk assessment.
-3. **Live Streaming**: A real-time mode capable of connecting to web sockets to ingest transaction data continuously, rendering clusters as they form.
-4. **Risk Scoring Matrix**: Calculates a Suspicion Score (0-100) based on weighted penalties for behaviors like Smurfing (+40) and Nocturnal Activity (+25).
+1. **Intelligent Ingestion**: `map_columns` automatically standardizes raw CSV data against common bank statement aliases.
+2. **AI Forensic Deep Dive**: A specialized interface providing behavioral narrative summaries, classification, and numerical risk assessment.
+3. **Forensic Replay Simulation**: Allows investigators to watch the network topology evolve over "time" or risk-relevance.
+4. **Risk Scoring Matrix**: Calculates a Suspicion Score (0-100) based on weighted penalties for suspicious behaviors.
 
 ## 📊 Evaluation
-The platform demonstrates highly optimized Pandas handling (vectorized ops over `.apply()`), clean separation of concerns, and extensive defensive programming handling streaming responses natively through chunk generators. The user interface leverages modern CSS capabilities to deliver a professional and responsive command-center experience.
+The platform demonstrates highly optimized Pandas handling (vectorized ops), clean separation of concerns, and defensive programming. The user interface leverages modern CSS to deliver a professional and responsive command-center experience.

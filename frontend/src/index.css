@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
     --bg-dark: #070708;
@@ -64,6 +64,7 @@ body {
 
 .pulse-red {
     animation: pulse-red-scale 2s infinite;
+    will-change: transform, opacity;
 }
 
 @keyframes pulse-red-scale {
@@ -86,7 +87,8 @@ body {
 .shimmer {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
     background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+    animation: shimmer 2s infinite linear;
+    will-change: background-position;
 }
 
 @keyframes shimmer {
@@ -107,20 +109,61 @@ body {
     font-family: 'JetBrains Mono', monospace;
 }
 
-/* Custom Scrollbar for Chrome/Safari */
-::-webkit-scrollbar {
-    width: 6px;
+/* Premium Smooth Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.2));
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.4);
+}
+
+/* Glass Shine Effect */
+.glass-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.02) 45%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.02) 55%,
+            transparent 100%);
+    transform: rotate(45deg);
+    transition: all 0.5s;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.glass-shine:hover::after {
+    opacity: 1;
+    transform: rotate(45deg) translate(25%, 25%);
+}
+
+.smooth-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 30px rgba(79, 70, 229, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
 }

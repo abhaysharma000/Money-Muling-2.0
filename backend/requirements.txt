@@ -4,3 +4,6 @@ pandas
 networkx
 python-multipart
 pydantic
+torch
+numpy
+scikit-learn
