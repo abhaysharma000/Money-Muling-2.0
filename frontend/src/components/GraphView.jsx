@@ -121,8 +121,8 @@ const GraphView = ({ data, onSelectNode, filterSuspiciousOnly = false, highlight
                 },
                 stabilization: {
                     enabled: true,
-                    iterations: 1000,
-                    updateInterval: 50
+                    iterations: 150,
+                    updateInterval: 25
                 },
                 adaptiveTimestep: true
             },

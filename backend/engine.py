@@ -218,7 +218,7 @@ class ForensicsEngine:
             final_score = (0.6 * p_ml * 100) + (0.4 * min(100, h_score))
             final_score = round(min(100, final_score), 2)
             
-            if final_score > 15:
+            if final_score > 30:
                 # Get last 10 tx for this node
                 node_tx = [tx for tx in self.transactions if tx['sender_id'] == node or tx['receiver_id'] == node]
                 node_tx.sort(key=lambda x: x['timestamp'], reverse=True)
@@ -333,21 +333,32 @@ class ForensicsEngine:
         return chains
 
     def get_graph_data(self, suspicious_accounts: List[Dict]) -> Dict:
-        """Pure-Python Graph Export"""
-        node_ids = {acc['account_id'] for acc in suspicious_accounts}
-        # Add neighbors for context
+        """Optimized Forensic Graph Export (Capped for Performance)"""
+        # Focus on top suspicious nodes 
+        top_suspicious = sorted(suspicious_accounts, key=lambda x: x['suspicion_score'], reverse=True)[:200]
+        node_ids = {acc['account_id'] for acc in top_suspicious}
+        
+        # Add limited context neighbors (only for very high risk nodes)
         all_relevant = set(node_ids)
-        for node in node_ids:
-            try:
-                all_relevant.update(self.graph.successors(node))
-                all_relevant.update(self.graph.predecessors(node))
-            except: pass
+        for acc in top_suspicious:
+            if acc['suspicion_score'] > 70:
+                try:
+                    # Add max 5 successors and 5 predecessors for context
+                    succs = list(self.graph.successors(acc['account_id']))[:5]
+                    preds = list(self.graph.predecessors(acc['account_id']))[:5]
+                    all_relevant.update(succs)
+                    all_relevant.update(preds)
+                except: pass
+            
+            # Hard limit to prevent browser crash
+            if len(all_relevant) > 500: break
             
         # Global transaction counts per node (Pure Python)
         counts = defaultdict(int)
         for tx in self.transactions:
-            counts[tx['sender_id']] += 1
-            counts[tx['receiver_id']] += 1
+            if tx['sender_id'] in all_relevant or tx['receiver_id'] in all_relevant:
+                counts[tx['sender_id']] += 1
+                counts[tx['receiver_id']] += 1
             
         nodes = []
         for n_id in all_relevant:
@@ -359,10 +370,11 @@ class ForensicsEngine:
                 "tags": acc['detected_patterns'] if acc else [],
                 "total_transactions": counts[n_id],
                 "is_legitimate": False,
-                "ring_id": ""
+                "ring_id": acc['ring_id'] if acc else ""
             })
             
         edges = []
+        edge_count = 0
         for u, v, d in self.graph.subgraph(all_relevant).edges(data=True):
             edges.append({
                 "from_node": str(u),
@@ -370,4 +382,7 @@ class ForensicsEngine:
                 "label": f"${d.get('total_amount', 0):,.0f}",
                 "value": float(d.get('total_amount', 0))
             })
+            edge_count += 1
+            if edge_count > 800: break # Hard limit on edges
+            
         return {"nodes": nodes, "edges": edges}
